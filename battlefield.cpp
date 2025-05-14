@@ -1,16 +1,17 @@
-// main.cpp
-#include "Battlefield.h.cpp"
+#include <iostream>
+#include "Battlefield.h"
 
 int main() {
-    // Create a 10x5 battlefield
-    Battlefield battlefield(10, 5);
+    Battlefield battlefield(20, 20);  // Create 20x20 battlefield
 
-    // Place some robots
-    battlefield.placeRobot("Alpha", 2, 2);
-    battlefield.placeRobot("Beta", 5, 1);
-    battlefield.placeRobot("Gamma", 7, 4);
+    // Place a few robots
+    battlefield.placeRobot("Alpha", 2, 3);
+    battlefield.placeRobot("Bravo", 5, 6);
 
-    // Display the battlefield
+    // Move a robot
+    battlefield.moveRobot("Alpha", 3, 3);
+
+    // Display battlefield
     battlefield.display();
 
     return 0;

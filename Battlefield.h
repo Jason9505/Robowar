@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <iomanip>
 
 const char EMPTY_CELL = '.';
 
@@ -19,14 +20,18 @@ private:
     std::map<std::string, std::pair<int, int>> robotPositions;
 
 public:
+    // Constructors
+    Battlefield() : width(20), height(20), grid(20, std::vector<char>(20, EMPTY_CELL)) {}
     Battlefield(int w, int h) : width(w), height(h), grid(h, std::vector<char>(w, EMPTY_CELL)) {}
 
     // Place a robot if the position is free and valid
     bool placeRobot(const std::string& name, int x, int y) {
-        if (isInside(x, y) && !isOccupied(x, y)) {
-            grid[y][x] = name[0]; // First letter of the robot's name
-            robotPositions[name] = {x, y};
-            return true;
+        if (isInside(x, y)) {
+            if (!isOccupied(x, y)) {
+                grid[y][x] = name[0]; // First letter of the robot's name
+                robotPositions[name] = {x, y};
+                return true;
+            }
         }
         return false;
     }
@@ -59,13 +64,24 @@ public:
         return {-1, -1};
     }
 
-    // Display battlefield
+    // Enhanced display with coordinates
     void display() const {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                std::cout << grid[y][x];
+        std::cout << "\n" << width << "x" << height << " Battlefield:\n";
+        
+        // Print column headers
+        std::cout << "   ";
+        for (int x = 0; x < width; x++) {
+            std::cout << std::setw(2) << x % 10; 
+        }
+        std::cout << "\n";
+
+        // Print grid with row numbers
+        for (int y = 0; y < height; y++) {
+            std::cout << std::setw(2) << y << " ";
+            for (int x = 0; x < width; x++) {
+                std::cout << grid[y][x] << " ";
             }
-            std::cout << '\n';
+            std::cout << "\n";
         }
     }
 
@@ -80,4 +96,4 @@ public:
     }
 };
 
-#endif // BATTLEFIELD_H boi
+#endif // BATTLEFIELD_H
