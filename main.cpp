@@ -1,18 +1,27 @@
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 #include "Battlefield.h"
+#include "ConfigLoader.h"
 
 int main() {
-    Battlefield battlefield(20, 20);  // Create 20x20 battlefield
+    srand(static_cast<unsigned>(time(nullptr)));  // For random positions
 
-    // Place a few robots
-    battlefield.placeRobot("Alpha", 2, 3);
-    battlefield.placeRobot("Bravo", 5, 6);
+    ConfigLoader loader("config.txt");
+    if (!loader.load()) {
+        std::cerr << "Failed to load configuration file." << std::endl;
+        return 1;
+    }
 
-    // Move a robot
-    battlefield.moveRobot("Alpha", 3, 3);
+    Battlefield battlefield(loader.getWidth(), loader.getHeight());
 
-    // Display battlefield
+    for (const auto& robot : loader.getRobots()) {
+        if (!battlefield.placeRobot(robot.name, robot.x, robot.y)) {
+            std::cerr << "Failed to place robot: " << robot.name << " at (" 
+                      << robot.x << ", " << robot.y << ")" << std::endl;
+        }
+    }
+
     battlefield.display();
-
     return 0;
 }
