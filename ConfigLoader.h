@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
-#include <ctime>
 
 struct RobotConfig {
     std::string name;
@@ -20,6 +19,7 @@ class ConfigLoader {
 private:
     std::string filename;
     int width = 20, height = 20;
+    int steps = 10;
     std::vector<RobotConfig> robots;
 
 public:
@@ -36,6 +36,9 @@ public:
             if (line.find("M by N") != std::string::npos) {
                 std::istringstream iss(line.substr(line.find(":") + 1));
                 iss >> width >> height;
+            } else if (line.find("steps") != std::string::npos) {
+                std::istringstream iss(line.substr(line.find(":") + 1));
+                iss >> steps;
             } else if (line.find("GenericRobot") != std::string::npos) {
                 std::istringstream iss(line);
                 std::string type, name, xStr, yStr;
@@ -54,6 +57,7 @@ public:
 
     int getWidth() const { return width; }
     int getHeight() const { return height; }
+    int getSteps() const { return steps; }
     const std::vector<RobotConfig>& getRobots() const { return robots; }
 };
 
