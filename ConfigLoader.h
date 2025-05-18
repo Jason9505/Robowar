@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <ctime>
 
 struct RobotConfig {
     std::string name;
@@ -23,7 +24,9 @@ private:
     std::vector<RobotConfig> robots;
 
 public:
-    ConfigLoader(const std::string& fname) : filename(fname) {}
+    ConfigLoader(const std::string& fname) : filename(fname) {
+        srand(static_cast<unsigned>(time(nullptr)));
+    }
 
     bool load() {
         std::ifstream file(filename);

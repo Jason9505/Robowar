@@ -7,44 +7,39 @@
 #include "Battlefield.h"
 #include "ConfigLoader.h"
 #include "GenericRobot.h"
+#include "GameManager.h"
 
 int main() {
     srand(static_cast<unsigned>(time(nullptr)));
 
-    ConfigLoader loader("config.txt");  // use new file name
+    ConfigLoader loader("config.txt");
     if (!loader.load()) {
         std::cerr << "Failed to load config.txt" << std::endl;
         return 1;
     }
 
-    Battlefield battlefield(loader.getWidth(), loader.getHeight());
+    GameManager manager(loader.getWidth(), loader.getHeight());
 
     std::vector<std::shared_ptr<GenericRobot>> robots;
 
     for (const auto& robotData : loader.getRobots()) {
-        if (battlefield.placeRobot(robotData.name, robotData.x, robotData.y)) {
-            robots.push_back(std::make_shared<GenericRobot>(
-                robotData.name, robotData.x, robotData.y, &battlefield
-            ));
+        auto robot = std::make_shared<GenericRobot>(
+            robotData.name, robotData.x, robotData.y, &manager.getBattlefield()
+        );
+
+        if (manager.getBattlefield().placeRobot(robotData.name, robotData.x, robotData.y)) {
+            manager.addRobot(robot.get());
+            robots.push_back(robot);
         } else {
             std::cerr << "Could not place robot " << robotData.name << " at ("
                       << robotData.x << ", " << robotData.y << ")\n";
         }
     }
 
-    // Use dynamic number of steps from config
     int steps = loader.getSteps();
     for (int t = 0; t < steps; ++t) {
         std::cout << "\n--- Turn " << t + 1 << " ---\n";
-
-        for (auto& robot : robots) {
-            if (battlefield.getRobotPosition(robot->getName()).first == -1)
-                continue;
-
-            robot->takeTurn();
-        }
-
-        battlefield.display();
+        manager.takeTurn();
     }
 
     return 0;
