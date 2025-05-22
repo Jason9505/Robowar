@@ -53,9 +53,7 @@ public:
         }
 
         if (shells <= 0) {
-            std::cout << name << " has no shells left and self-destructs!\n";
-            battlefield->removeRobot(name);
-            if (onDestroyedCallback) onDestroyedCallback(this);
+            std::cout << name << " has no shells left and cannot fire\n";
             return;
         }
 
