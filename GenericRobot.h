@@ -46,8 +46,14 @@ public:
     }
 
     void fire(int dx, int dy) {
+        // Prevent suicide
+        if (dx == 0 && dy == 0) {
+            std::cout << name << " refuses to fire at itself (0,0 offset)\n";
+            return;
+        }
+
         if (shells <= 0) {
-            std::cout << name << " has no shells left and self-destructs!" << std::endl;
+            std::cout << name << " has no shells left and self-destructs!\n";
             battlefield->removeRobot(name);
             if (onDestroyedCallback) onDestroyedCallback(this);
             return;
@@ -56,7 +62,25 @@ public:
         int fx = x + dx;
         int fy = y + dy;
         shells--;
-        std::cout << name << " fires at (" << fx << ", " << fy << "). Shells left: " << shells << std::endl;
+        
+        std::cout << name << " fires at (" << fx << ", " << fy << "). Shells left: " << shells << "\n";
+
+        // 70% chance to hit
+        if ((rand() % 100) < 70) {
+            // Get all robot positions
+            const auto& positions = battlefield->getRobotPositions();
+            for (const auto& entry : positions) {
+                const std::string& rname = entry.first;
+                const auto& pos = entry.second;
+                if (pos.first == fx && pos.second == fy) {
+                    std::cout << "Direct hit! " << rname << " at (" << fx << ", " << fy << ") was destroyed!\n";
+                    battlefield->removeRobot(rname);
+                    break;
+                }
+            }
+        } else {
+            std::cout << "The shot missed!\n";
+        }
     }
 
     void move(int dx, int dy) {
@@ -83,11 +107,14 @@ public:
         int look_dy = rand() % 3 - 1;
         look(look_dx, look_dy);
 
-        int fire_dx = rand() % 3 - 1;
-        int fire_dy = rand() % 3 - 1;
-        if (fire_dx != 0 || fire_dy != 0) {
-            fire(fire_dx, fire_dy);
-        }
+        // Generate fire direction until it's not (0,0)
+        int fire_dx = 0, fire_dy = 0;
+        do {
+            fire_dx = rand() % 3 - 1;
+            fire_dy = rand() % 3 - 1;
+        } while (fire_dx == 0 && fire_dy == 0);
+        
+        fire(fire_dx, fire_dy);
 
         int move_dx = rand() % 3 - 1;
         int move_dy = rand() % 3 - 1;

@@ -7,7 +7,7 @@
 #include "Battlefield.h"
 #include "ConfigLoader.h"
 #include "GenericRobot.h"
-#include "GameManager.h"
+#include "Robot.h"
 
 int main() {
     srand(static_cast<unsigned>(time(nullptr)));
@@ -18,7 +18,7 @@ int main() {
         return 1;
     }
 
-    GameManager manager(loader.getWidth(), loader.getHeight());
+    Robot manager(loader.getWidth(), loader.getHeight());
 
     std::vector<std::shared_ptr<GenericRobot>> robots;
 
