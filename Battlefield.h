@@ -55,14 +55,29 @@ public:
         return {-1, -1};
     }
 
+    const std::map<std::string, std::pair<int, int>>& getRobotPositions() const {
+        return robotPositions;
+    }
+
     void display() const {
         std::cout << "\n" << width << "x" << height << " Battlefield:\n";
+        
+        // Print top header (x-axis numbers)
         std::cout << "   ";
-        for (int x = 0; x < width; x++) std::cout << std::setw(2) << x % 10;
+        for (int x = 0; x < width; x++) {
+            std::cout << std::setw(2) << x % 10;
+        }
         std::cout << "\n";
+
+        // Print each row
         for (int y = 0; y < height; y++) {
+            // Print y-axis number
             std::cout << std::setw(2) << y << " ";
-            for (int x = 0; x < width; x++) std::cout << grid[y][x] << " ";
+            
+            // Print grid cells
+            for (int x = 0; x < width; x++) {
+                std::cout << grid[y][x] << " ";
+            }
             std::cout << "\n";
         }
     }

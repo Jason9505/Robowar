@@ -1,9 +1,9 @@
 # config.txt
-M by N : 40 50
+M by N : 20 20
 steps: 5
 robots: 5
 GenericRobot Kidd 3 6
 GenericRobot Jet 12 1
-GenericRobot Alpha 35 20
-GenericRobot Beta 20 37
+GenericRobot Alpha 15 1
+GenericRobot Beta 1 16
 GenericRobot Star random random
