@@ -6,8 +6,8 @@
 
 #include "Battlefield.h"
 #include "ConfigLoader.h"
-#include "GenericRobot.h"
 #include "Robot.h"
+#include "RobotUpgrade.h"
 
 int main() {
     srand(static_cast<unsigned>(time(nullptr)));
@@ -18,21 +18,37 @@ int main() {
         return 1;
     }
 
-    Robot manager(loader.getWidth(), loader.getHeight());
+    RobotManager manager(loader.getWidth(), loader.getHeight());
 
     std::vector<std::shared_ptr<GenericRobot>> robots;
 
     for (const auto& robotData : loader.getRobots()) {
-        auto robot = std::make_shared<GenericRobot>(
-            robotData.name, robotData.x, robotData.y, &manager.getBattlefield()
-        );
+        std::shared_ptr<GenericRobot> robot;
+        
+        // Small chance to start with an upgraded robot (optional)
+        if (rand() % 10 == 0) {
+            int upgradeType = rand() % 3;
+            switch(upgradeType) {
+                case 0:
+                    robot = std::make_shared<JumpBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
+                case 1:
+                    robot = std::make_shared<SemiAutoBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
+                case 2:
+                    robot = std::make_shared<TrackBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
+            }
+        } else {
+            robot = std::make_shared<GenericRobot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+        }
 
         if (manager.getBattlefield().placeRobot(robotData.name, robotData.x, robotData.y)) {
-            manager.addRobot(robot.get());
+            manager.addRobot(robot);
             robots.push_back(robot);
         } else {
             std::cerr << "Could not place robot " << robotData.name << " at ("
-                      << robotData.x << ", " << robotData.y << ")\n";
+                    << robotData.x << ", " << robotData.y << ")\n";
         }
     }
 
