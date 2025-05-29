@@ -1,4 +1,3 @@
-// Robot.h
 #ifndef ROBOT_H
 #define ROBOT_H
 
@@ -12,55 +11,76 @@
 #include <memory>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>  // Added for std::find_if
+#include <algorithm>
 #include "Battlefield.h"
 
-// Add this before GenericRobot class in Robot.h
+// Forward declarations for upgraded robots
 class JumpBot;
 class SemiAutoBot;
 class TrackBot;
 
-class GenericRobot {
+// Abstract base class
+class Robot {
 protected:
     std::string name;
     int x, y;
-    int shells;
-    int lives;
     Battlefield* battlefield;
-    std::function<void(GenericRobot*)> onDestroyedCallback;
+public:
+    Robot(const std::string& name, int x, int y, Battlefield* bf) 
+        : name(name), x(x), y(y), battlefield(bf) {}
+    virtual ~Robot() = default;
+    
+    std::string getName() const { return name; }
+    std::pair<int, int> getPosition() const { return {x, y}; }
+    void setPosition(int newX, int newY) { x = newX; y = newY; }
+    Battlefield* getBattlefield() const { return battlefield; }
+};
+
+// Capability interfaces
+class MovingRobot : virtual public Robot {
+public:
+    using Robot::Robot;
+    virtual void move(int dx, int dy) = 0;
+};
+
+class ShootingRobot : virtual public Robot {
+protected:
+    int shells = 100;
+public:
+    using Robot::Robot;
+    virtual void fire(int dx, int dy) = 0;
+    int getShells() const { return shells; }
+    void setShells(int s) { shells = s; }
+};
+
+class SeeingRobot : virtual public Robot {
+public:
+    using Robot::Robot;
+    virtual void look(int dx, int dy) = 0;
+};
+
+class ThinkingRobot : virtual public Robot {
+public:
+    using Robot::Robot;
+    virtual void think() = 0;
+};
+
+// Base concrete robot class
+class GenericRobot : public MovingRobot, public ShootingRobot, 
+                    public SeeingRobot, public ThinkingRobot {
+protected:
+    int lives = 3;
     bool upgraded = false;
     int upgradeCount = 0;
     int currentUpgradeType = -1;
-
+    std::function<void(GenericRobot*)> onDestroyedCallback;
+    
 public:
-    bool hasUpgrade() const { return upgraded; }
     GenericRobot(const std::string& name, int x, int y, Battlefield* bf)
-        : name(name), x(x), y(y), shells(100), lives(3), battlefield(bf) {}
-    virtual ~GenericRobot() = default;
-
-    std::string getName() const { return name; }
-    int getShells() const { return shells; }
-    int getLives() const { return lives; }
-    std::pair<int, int> getPosition() const { return {x, y}; }
-    void setPosition(int newX, int newY) { x = newX; y = newY; }
-    void setShells(int s) { shells = s; }
-    void decrementLives() { if (lives > 0) lives--; }
-
-    void setOnDestroyedCallback(std::function<void(GenericRobot*)> callback) {
-        onDestroyedCallback = callback;
-    }
-
-    virtual void think() {
-        std::cout << name << " is thinking..." << std::endl;
-    }
-
-    virtual void look(int dx, int dy) {
-        int lx = x + dx;
-        int ly = y + dy;
-        std::cout << name << " looks at (" << lx << ", " << ly << ")" << std::endl;
-    }
-
-    virtual void move(int dx, int dy) {
+        : Robot(name, x, y, bf) {}
+        
+    // Implement pure virtual functions
+    void move(int dx, int dy) override {
         int newX = x + dx;
         int newY = y + dy;
 
@@ -73,11 +93,7 @@ public:
         }
     }
 
-    virtual std::shared_ptr<GenericRobot> applyRandomUpgrade();
-        
-    Battlefield* getBattlefield() const { return battlefield; }
-
-    virtual void fire(int dx, int dy) {
+    void fire(int dx, int dy) override {
         if (dx == 0 && dy == 0) {
             std::cout << name << " refuses to fire at itself (0,0 offset)\n";
             return;
@@ -114,11 +130,9 @@ public:
             std::cout << "The shot missed!\n";
         }
 
-        // Grant upgrade if this robot killed someone and doesn't have an upgrade yet
-        if (killedSomeone && !hasUpgrade()) {
+        if (killedSomeone && !upgraded && upgradeCount < 2) {
             auto upgradedRobot = applyRandomUpgrade();
             if (upgradedRobot) {
-                // Need to replace this robot in the manager
                 if (onDestroyedCallback) {
                     onDestroyedCallback(this);
                 }
@@ -126,9 +140,29 @@ public:
         }
     }
 
+    void look(int dx, int dy) override {
+        int lx = x + dx;
+        int ly = y + dy;
+        std::cout << name << " looks at (" << lx << ", " << ly << ")" << std::endl;
+    }
+
+    void think() override {
+        std::cout << name << " is thinking..." << std::endl;
+    }
+
+    int getLives() const { return lives; }
+    void decrementLives() { if (lives > 0) lives--; }
+    bool hasUpgrade() const { return upgraded; }
+
+    void setOnDestroyedCallback(std::function<void(GenericRobot*)> callback) {
+        onDestroyedCallback = callback;
+    }
+
+    virtual std::shared_ptr<GenericRobot> applyRandomUpgrade();
+    
     virtual void takeTurn() {
         think();
-
+        
         int look_dx = rand() % 3 - 1;
         int look_dy = rand() % 3 - 1;
         look(look_dx, look_dy);
@@ -166,12 +200,10 @@ public:
         return placed;
     }
 
-
     void robotDestroyed(GenericRobot* robot) {
         robot->decrementLives();
         if (robot->getLives() > 0) {
             std::cout << robot->getName() << " will reenter the battlefield later." << std::endl;
-            // Find the shared_ptr version of this robot
             for (auto& r : robots) {
                 if (r.get() == robot) {
                     respawnQueue.push(r);
@@ -205,23 +237,15 @@ public:
     }
 
     void upgradeRobot(std::shared_ptr<GenericRobot> oldRobot, std::shared_ptr<GenericRobot> newRobot) {
-        // Find and remove the old robot
         auto it = std::find_if(robots.begin(), robots.end(), 
             [&](const auto& r) { return r.get() == oldRobot.get(); });
         
         if (it != robots.end()) {
-            // Remove from battlefield
             battlefield.removeRobot(oldRobot->getName());
-            
-            // Replace in vector
             *it = newRobot;
-            
-            // Add to battlefield
             battlefield.placeRobot(newRobot->getName(), 
                                 newRobot->getPosition().first, 
                                 newRobot->getPosition().second);
-            
-            // Set callback
             newRobot->setOnDestroyedCallback([this](GenericRobot* r) { robotDestroyed(r); });
         }
     }

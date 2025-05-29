@@ -1,6 +1,6 @@
 # config.txt
 M by N : 20 20
-steps: 100
+steps:300
 robots: 5
 GenericRobot Kidd 3 6
 GenericRobot Jet 12 1

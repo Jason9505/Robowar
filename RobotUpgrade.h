@@ -3,7 +3,6 @@
 
 #include "Robot.h"
 
-// ------------------ JumpBot ------------------
 class JumpBot : public GenericRobot {
 private:
     int jumpCount;
@@ -12,9 +11,12 @@ private:
 
 public:
     JumpBot(const std::string& name, int x, int y, Battlefield* bf)
-        : GenericRobot(name, x, y, bf), jumpCount(3),
-          battlefieldWidth(bf->getWidth()), battlefieldHeight(bf->getHeight()) {
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf),
+          jumpCount(3), battlefieldWidth(bf->getWidth()), 
+          battlefieldHeight(bf->getHeight()) {
         upgraded = true;
+        currentUpgradeType = 0;
+        upgradeCount = 1;
     }
 
     void takeTurn() override {
@@ -40,13 +42,14 @@ public:
     }
 };
 
-// ------------------ SemiAutoBot ------------------
 class SemiAutoBot : public GenericRobot {
 public:
     SemiAutoBot(const std::string& name, int x, int y, Battlefield* bf)
-        : GenericRobot(name, x, y, bf) {
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf) {
         setShells(15);
         upgraded = true;
+        currentUpgradeType = 1;
+        upgradeCount = 1;
     }
 
     void fire(int dx, int dy) override {
@@ -56,12 +59,11 @@ public:
         }
 
         for (int i = 0; i < 3 && getShells() > 0; i++) {
-            GenericRobot::fire(dx, dy);
+            GenericRobot::fire(dx, dy);  // Changed from ShootingRobot::fire to GenericRobot::fire
         }
     }
 };
 
-// ------------------ TrackBot ------------------
 class TrackBot : public GenericRobot {
 private:
     int trackersLeft;
@@ -69,8 +71,10 @@ private:
 
 public:
     TrackBot(const std::string& name, int x, int y, Battlefield* bf)
-        : GenericRobot(name, x, y, bf), trackersLeft(3) {
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf), trackersLeft(3) {
         upgraded = true;
+        currentUpgradeType = 2;
+        upgradeCount = 1;
     }
 
     void takeTurn() override {
@@ -106,20 +110,18 @@ public:
     }
 };
 
-// ------------------ GenericRobot::applyRandomUpgrade ------------------
 inline std::shared_ptr<GenericRobot> GenericRobot::applyRandomUpgrade() {
     if (upgraded && upgradeCount >= 2) {
         std::cout << name << " has already reached the maximum upgrade limit (2).\n";
         return nullptr;
     }
 
-    // Create a vector of available upgrades (0: JumpBot, 1: SemiAutoBot, 2: TrackBot)
     std::vector<int> availableUpgrades = {0, 1, 2};
     
-    // Remove already obtained upgrades from available options
     if (upgraded) {
-        availableUpgrades.erase(std::remove(availableUpgrades.begin(), availableUpgrades.end(), currentUpgradeType), 
-                               availableUpgrades.end());
+        availableUpgrades.erase(std::remove(availableUpgrades.begin(), 
+                                 availableUpgrades.end(), currentUpgradeType), 
+                                 availableUpgrades.end());
     }
 
     if (availableUpgrades.empty()) {
@@ -127,10 +129,9 @@ inline std::shared_ptr<GenericRobot> GenericRobot::applyRandomUpgrade() {
         return nullptr;
     }
 
-    // Randomly select from remaining available upgrades
     int choice = availableUpgrades[rand() % availableUpgrades.size()];
-    currentUpgradeType = choice; // Store the current upgrade type
-    upgradeCount++; // Increment upgrade count
+    currentUpgradeType = choice;
+    upgradeCount++;
 
     std::cout << name << " is receiving upgrade #" << upgradeCount << "! ";
 
