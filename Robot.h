@@ -1,3 +1,14 @@
+/**********|**********|**********|
+Program: Robot.h
+Course: Data Structures and Algorithms
+Trimester: 2410
+Name: Jason Hean Qi Shen
+ID: 242UC244FW
+Lecture Section: TC3L
+Tutorial Section: TT12L
+Email: jason.hean.qi@studen.mmu.edu.my
+Phone: 016-5556355
+**********|**********|**********/
 #ifndef ROBOT_H
 #define ROBOT_H
 
@@ -14,72 +25,76 @@
 #include <algorithm>
 #include "Battlefield.h"
 
-// Forward declarations for upgraded robots
+// Forward declarations for upgraded robot classes
 class JumpBot;
 class SemiAutoBot;
 class TrackBot;
 
-// Abstract base class
+// Abstract base class for all robots
 class Robot {
 protected:
-    std::string name;
-    int x, y;
-    Battlefield* battlefield;
+    std::string name;  // Robot identifier
+    int x, y;          // Current position
+    Battlefield* battlefield;  // Reference to the battlefield
 public:
     Robot(const std::string& name, int x, int y, Battlefield* bf) 
         : name(name), x(x), y(y), battlefield(bf) {}
     virtual ~Robot() = default;
     
+    // Accessors for robot properties
     std::string getName() const { return name; }
     std::pair<int, int> getPosition() const { return {x, y}; }
     void setPosition(int newX, int newY) { x = newX; y = newY; }
     Battlefield* getBattlefield() const { return battlefield; }
 };
 
-// Capability interfaces
+// Interface for robots that can move
 class MovingRobot : virtual public Robot {
 public:
     using Robot::Robot;
-    virtual void move(int dx, int dy) = 0;
+    virtual void move(int dx, int dy) = 0;  // Move by relative coordinates
 };
 
+// Interface for robots that can shoot
 class ShootingRobot : virtual public Robot {
 protected:
-    int shells = 100;
+    int shells = 100;  // Ammunition count
 public:
     using Robot::Robot;
-    virtual void fire(int dx, int dy) = 0;
+    virtual void fire(int dx, int dy) = 0;  // Fire in relative direction
     int getShells() const { return shells; }
     void setShells(int s) { shells = s; }
 };
 
+// Interface for robots that can look around
 class SeeingRobot : virtual public Robot {
 public:
     using Robot::Robot;
-    virtual void look(int dx, int dy) = 0;
+    virtual void look(int dx, int dy) = 0;  // Look in relative direction
 };
 
+// Interface for robots that can think/process
 class ThinkingRobot : virtual public Robot {
 public:
     using Robot::Robot;
-    virtual void think() = 0;
+    virtual void think() = 0;  // Perform thinking/processing
 };
 
-// Base concrete robot class
+// Base concrete robot class implementing all capabilities
 class GenericRobot : public MovingRobot, public ShootingRobot, 
                     public SeeingRobot, public ThinkingRobot {
 protected:
-    int lives = 3;
-    bool upgraded = false;
-    int upgradeCount = 0;
-    int currentUpgradeType = -1;
-    std::function<void(GenericRobot*)> onDestroyedCallback;
+    int lives = 3;  // Number of respawns before permanent destruction
+    bool upgraded = false;  // Whether robot has been upgraded
+    int upgradeCount = 0;   // Number of upgrades applied
+    int currentUpgradeType = -1;  // Type of current upgrade
+    std::function<void(GenericRobot*)> onDestroyedCallback;  // Callback when destroyed
     
 public:
     GenericRobot(const std::string& name, int x, int y, Battlefield* bf)
         : Robot(name, x, y, bf) {}
         
-    // Implement pure virtual functions
+    // Implement movement capability
     void move(int dx, int dy) override {
         int newX = x + dx;
         int newY = y + dy;
@@ -93,6 +108,7 @@ public:
         }
     }
 
+    // Implement shooting capability
     void fire(int dx, int dy) override {
         if (dx == 0 && dy == 0) {
             std::cout << name << " refuses to fire at itself (0,0 offset)\n";
@@ -111,7 +127,7 @@ public:
         std::cout << name << " fires at (" << fx << ", " << fy << "). Shells left: " << shells << "\n";
 
         bool killedSomeone = false;
-        if ((rand() % 100) > 70) {
+        if ((rand() % 100) < 70) {  // 70% chance to hit
             const auto& positions = battlefield->getRobotPositions();
             for (const auto& entry : positions) {
                 const std::string& rname = entry.first;
@@ -130,6 +146,7 @@ public:
             std::cout << "The shot missed!\n";
         }
 
+        // Check for upgrade eligibility after a kill
         if (killedSomeone && !upgraded && upgradeCount < 2) {
             auto upgradedRobot = applyRandomUpgrade();
             if (upgradedRobot) {
@@ -140,33 +157,41 @@ public:
         }
     }
 
+    // Implement looking capability
     void look(int dx, int dy) override {
         int lx = x + dx;
         int ly = y + dy;
         std::cout << name << " looks at (" << lx << ", " << ly << ")" << std::endl;
     }
 
+    // Implement thinking capability
     void think() override {
         std::cout << name << " is thinking..." << std::endl;
     }
 
+    // Accessors for robot state
     int getLives() const { return lives; }
     void decrementLives() { if (lives > 0) lives--; }
     bool hasUpgrade() const { return upgraded; }
 
+    // Set callback for when robot is destroyed
     void setOnDestroyedCallback(std::function<void(GenericRobot*)> callback) {
         onDestroyedCallback = callback;
     }
 
+    // Applies a random upgrade to the robot (implemented in RobotUpgrade.h)
     virtual std::shared_ptr<GenericRobot> applyRandomUpgrade();
     
+    // Default turn sequence for basic robots
     virtual void takeTurn() {
         think();
         
+        // Randomly look in a direction
         int look_dx = rand() % 3 - 1;
         int look_dy = rand() % 3 - 1;
         look(look_dx, look_dy);
 
+        // Fire in a random direction (not at self)
         int fire_dx = 0, fire_dy = 0;
         do {
             fire_dx = rand() % 3 - 1;
@@ -175,22 +200,25 @@ public:
         
         fire(fire_dx, fire_dy);
 
+        // Move in a random direction
         int move_dx = rand() % 3 - 1;
         int move_dy = rand() % 3 - 1;
         move(move_dx, move_dy);
     }
 };
 
+// Manages all robots on the battlefield
 class RobotManager {
 private:
-    Battlefield battlefield;
-    std::vector<std::shared_ptr<GenericRobot>> robots;
-    std::queue<std::shared_ptr<GenericRobot>> respawnQueue;
-    std::mt19937 rng{std::random_device{}()};
+    Battlefield battlefield;  // The battlefield grid
+    std::vector<std::shared_ptr<GenericRobot>> robots;  // All active robots
+    std::queue<std::shared_ptr<GenericRobot>> respawnQueue;  // Robots waiting to respawn
+    std::mt19937 rng{std::random_device{}()};  // Random number generator
 
 public:
     RobotManager(int width, int height) : battlefield(width, height) {}
 
+    // Adds a robot to the battlefield if position is valid
     bool addRobot(std::shared_ptr<GenericRobot> robot) {
         bool placed = battlefield.placeRobot(robot->getName(), robot->getPosition().first, robot->getPosition().second);
         if (placed) {
@@ -200,6 +228,7 @@ public:
         return placed;
     }
 
+    // Handles robot destruction (called via callback)
     void robotDestroyed(GenericRobot* robot) {
         robot->decrementLives();
         if (robot->getLives() > 0) {
@@ -215,12 +244,14 @@ public:
         }
     }
 
+    // Attempts to respawn one destroyed robot at a random empty position
     void respawnOneRobot() {
         if (respawnQueue.empty()) return;
 
         auto robot = respawnQueue.front();
         respawnQueue.pop();
 
+        // Try up to 100 random positions for respawn
         for (int i = 0; i < 100; ++i) {
             int x = rng() % battlefield.getWidth();
             int y = rng() % battlefield.getHeight();
@@ -236,6 +267,7 @@ public:
         std::cout << "Failed to find a space for " << robot->getName() << " to respawn.\n";
     }
 
+    // Replaces a robot with an upgraded version
     void upgradeRobot(std::shared_ptr<GenericRobot> oldRobot, std::shared_ptr<GenericRobot> newRobot) {
         auto it = std::find_if(robots.begin(), robots.end(), 
             [&](const auto& r) { return r.get() == oldRobot.get(); });
@@ -250,14 +282,16 @@ public:
         }
     }
 
+    // Processes one turn of the simulation
     void takeTurn() {
         for (auto& robot : robots) {
-            robot->takeTurn();
+            robot->takeTurn();  // Each robot takes its turn
         }
-        respawnOneRobot();
-        battlefield.display();
+        respawnOneRobot();      // Attempt to respawn destroyed robots
+        battlefield.display();  // Show the current battlefield state
     }
 
+    // Accessor for the battlefield
     Battlefield& getBattlefield() { return battlefield; }
 };
 

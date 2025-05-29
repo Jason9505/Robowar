@@ -1,4 +1,14 @@
-// Modified Battlefield.h
+/**********|**********|**********|
+Program: Battlefield.h
+Course: Data Structures and Algorithms
+Trimester: 2410
+Name: Jason Hean Qi Shen
+ID: 242UC244FW
+Lecture Section: TC3L
+Tutorial Section: TT12L
+Email: jason.hean.qi@studen.mmu.edu.my
+Phone: 016-5556355
+**********|**********|**********/
 #ifndef BATTLEFIELD_H
 #define BATTLEFIELD_H
 
@@ -8,28 +18,31 @@
 #include <string>
 #include <iomanip>
 
-const char EMPTY_CELL = '.';
+const char EMPTY_CELL = '.';  // Character representing an empty cell on the battlefield
 
 class Battlefield {
 private:
-    int width;
-    int height;
-    std::vector<std::vector<char>> grid;
-    std::map<std::string, std::pair<int, int>> robotPositions;
+    int width;  // Width of the battlefield grid
+    int height; // Height of the battlefield grid
+    std::vector<std::vector<char>> grid;  // 2D grid representing the battlefield
+    std::map<std::string, std::pair<int, int>> robotPositions;  // Map of robot names to their positions
 
 public:
+    // Constructors initialize the battlefield with empty cells
     Battlefield() : width(20), height(20), grid(20, std::vector<char>(20, EMPTY_CELL)) {}
     Battlefield(int w, int h) : width(w), height(h), grid(h, std::vector<char>(w, EMPTY_CELL)) {}
 
+    // Places a robot at specified coordinates if the position is valid and unoccupied
     bool placeRobot(const std::string& name, int x, int y) {
         if (isInside(x, y) && !isOccupied(x, y)) {
-            grid[y][x] = name[0];
+            grid[y][x] = name[0];  // Use first character of name as grid representation
             robotPositions[name] = {x, y};
             return true;
         }
         return false;
     }
 
+    // Removes a robot from the battlefield by name
     void removeRobot(const std::string& name) {
         auto it = robotPositions.find(name);
         if (it != robotPositions.end()) {
@@ -40,6 +53,7 @@ public:
         }
     }
 
+    // Moves a robot to new coordinates if the position is valid and unoccupied
     bool moveRobot(const std::string& name, int newX, int newY) {
         if (!isInside(newX, newY) || isOccupied(newX, newY)) return false;
         auto it = robotPositions.find(name);
@@ -49,29 +63,31 @@ public:
         return placeRobot(name, newX, newY);
     }
 
+    // Returns the position of a robot by name, or (-1,-1) if not found
     std::pair<int, int> getRobotPosition(const std::string& name) const {
         auto it = robotPositions.find(name);
         if (it != robotPositions.end()) return it->second;
         return {-1, -1};
     }
 
+    // Returns the complete map of robot positions
     const std::map<std::string, std::pair<int, int>>& getRobotPositions() const {
         return robotPositions;
     }
 
+    // Displays the battlefield grid with coordinates
     void display() const {
         std::cout << "\n" << width << "x" << height << " Battlefield:\n";
         
-        // Print top header (x-axis numbers)
+        // Print column numbers (x-axis)
         std::cout << "   ";
         for (int x = 0; x < width; x++) {
-            std::cout << std::setw(2) << x % 10;
+            std::cout << std::setw(2) << x % 10;  // Single-digit display for simplicity
         }
         std::cout << "\n";
 
-        // Print each row
+        // Print each row with row number (y-axis)
         for (int y = 0; y < height; y++) {
-            // Print y-axis number
             std::cout << std::setw(2) << y << " ";
             
             // Print grid cells
@@ -82,9 +98,11 @@ public:
         }
     }
 
+    // Helper functions to check position validity and occupancy
     bool isInside(int x, int y) const { return x >= 0 && x < width && y >= 0 && y < height; }
     bool isOccupied(int x, int y) const { return grid[y][x] != EMPTY_CELL; }
 
+    // Accessors for battlefield dimensions
     int getWidth() const { return width; }
     int getHeight() const { return height; }
 };
