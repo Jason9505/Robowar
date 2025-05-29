@@ -15,7 +15,7 @@
 #include <algorithm>  // Added for std::find_if
 #include "Battlefield.h"
 
-// Forward declarations for upgrade classes
+// Add this before GenericRobot class in Robot.h
 class JumpBot;
 class SemiAutoBot;
 class TrackBot;
@@ -29,11 +29,13 @@ protected:
     Battlefield* battlefield;
     std::function<void(GenericRobot*)> onDestroyedCallback;
     bool upgraded = false;
+    int upgradeCount = 0;
+    int currentUpgradeType = -1;
 
 public:
     bool hasUpgrade() const { return upgraded; }
     GenericRobot(const std::string& name, int x, int y, Battlefield* bf)
-        : name(name), x(x), y(y), shells(10), lives(3), battlefield(bf) {}
+        : name(name), x(x), y(y), shells(100), lives(3), battlefield(bf) {}
     virtual ~GenericRobot() = default;
 
     std::string getName() const { return name; }
@@ -71,27 +73,8 @@ public:
         }
     }
 
-    virtual std::shared_ptr<GenericRobot> applyRandomUpgrade() {
-        if (upgraded) return nullptr;
+    virtual std::shared_ptr<GenericRobot> applyRandomUpgrade();
         
-        upgraded = true;
-        int choice = rand() % 3;
-        std::cout << name << " is receiving an upgrade! ";
-        
-        switch(choice) {
-            case 0:
-                std::cout << "Becoming a JumpBot!\n";
-                return std::make_shared<JumpBot>(name, x, y, battlefield);
-            case 1:
-                std::cout << "Becoming a SemiAutoBot!\n";
-                return std::make_shared<SemiAutoBot>(name, x, y, battlefield);
-            case 2:
-                std::cout << "Becoming a TrackBot!\n";
-                return std::make_shared<TrackBot>(name, x, y, battlefield);
-        }
-        return nullptr;
-    }
-
     Battlefield* getBattlefield() const { return battlefield; }
 
     virtual void fire(int dx, int dy) {
@@ -174,11 +157,15 @@ private:
 public:
     RobotManager(int width, int height) : battlefield(width, height) {}
 
-    void addRobot(std::shared_ptr<GenericRobot> robot) {
-        robots.push_back(robot);
-        robot->setOnDestroyedCallback([this](GenericRobot* r) { robotDestroyed(r); });
-        battlefield.placeRobot(robot->getName(), robot->getPosition().first, robot->getPosition().second);
+    bool addRobot(std::shared_ptr<GenericRobot> robot) {
+        bool placed = battlefield.placeRobot(robot->getName(), robot->getPosition().first, robot->getPosition().second);
+        if (placed) {
+            robots.push_back(robot);
+            robot->setOnDestroyedCallback([this](GenericRobot* r) { robotDestroyed(r); });
+        }
+        return placed;
     }
+
 
     void robotDestroyed(GenericRobot* robot) {
         robot->decrementLives();

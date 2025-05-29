@@ -10,7 +10,7 @@
 #include "RobotUpgrade.h"
 
 int main() {
-    srand(static_cast<unsigned>(time(nullptr)));
+    srand(static_cast<unsigned>(time(nullptr)));  // Only place srand
 
     ConfigLoader loader("config.txt");
     if (!loader.load()) {
@@ -24,11 +24,11 @@ int main() {
 
     for (const auto& robotData : loader.getRobots()) {
         std::shared_ptr<GenericRobot> robot;
-        
-        // Small chance to start with an upgraded robot (optional)
+
+        // Small chance to start with an upgraded robot
         if (rand() % 10 == 0) {
             int upgradeType = rand() % 3;
-            switch(upgradeType) {
+            switch (upgradeType) {
                 case 0:
                     robot = std::make_shared<JumpBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
                     break;
@@ -43,12 +43,11 @@ int main() {
             robot = std::make_shared<GenericRobot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
         }
 
-        if (manager.getBattlefield().placeRobot(robotData.name, robotData.x, robotData.y)) {
-            manager.addRobot(robot);
+        if (manager.addRobot(robot)) {
             robots.push_back(robot);
         } else {
             std::cerr << "Could not place robot " << robotData.name << " at ("
-                    << robotData.x << ", " << robotData.y << ")\n";
+                      << robotData.x << ", " << robotData.y << ")\n";
         }
     }
 
