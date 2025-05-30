@@ -43,29 +43,38 @@ int main() {
 
         // 10% chance to create an upgraded robot instead of a basic one
         if (rand() % 10 == 0) {
-            int upgradeType = rand() % 3;  // Randomly select upgrade type
+            int upgradeType = rand() % 6;  // Now 6 possible upgrade types (0-5)
             switch (upgradeType) {
-                case 0:  // JumpBot - can teleport around battlefield
+                case 0:  // JumpBot
                     robot = std::make_shared<JumpBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
                     break;
-                case 1:  // SemiAutoBot - fires multiple shots per turn
+                case 1:  // SemiAutoBot
                     robot = std::make_shared<SemiAutoBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
                     break;
-                case 2:  // TrackBot - can track and target other robots
+                case 2:  // TrackBot
                     robot = std::make_shared<TrackBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
                     break;
+                case 3:  // KamikazeBot
+                    robot = std::make_shared<KamikazeBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
+                case 4:  // SniperBot
+                    robot = std::make_shared<SniperBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
+                case 5:  // MedicBot (new)
+                    robot = std::make_shared<MedicBot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+                    break;
             }
-        } else {
-            // Create basic robot
-            robot = std::make_shared<GenericRobot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
         }
+            else {
+                // Create a basic GenericRobot if no upgrade is applied
+                robot = std::make_shared<GenericRobot>(robotData.name, robotData.x, robotData.y, &manager.getBattlefield());
+            }
 
         // Attempt to place robot on battlefield
         if (manager.addRobot(robot)) {
             robots.push_back(robot);
         } else {
-            std::cerr << "Could not place robot " << robotData.name << " at ("
-                      << robotData.x << ", " << robotData.y << ")\n";
+            std::cerr << "Could not place robot " << robotData.name << " at (" << robotData.x << ", " << robotData.y << ")\n";
         }
     }
 

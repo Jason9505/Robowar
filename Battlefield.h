@@ -17,6 +17,9 @@ Phone: 016-5556355
 #include <map>
 #include <string>
 #include <iomanip>
+#include <memory>
+
+class GenericRobot;
 
 const char EMPTY_CELL = '.';  // Character representing an empty cell on the battlefield
 
@@ -26,6 +29,7 @@ private:
     int height; // Height of the battlefield grid
     std::vector<std::vector<char>> grid;  // 2D grid representing the battlefield
     std::map<std::string, std::pair<int, int>> robotPositions;  // Map of robot names to their positions
+    std::map<std::string, std::weak_ptr<GenericRobot>> robotReferences; 
 
 public:
     // Constructors initialize the battlefield with empty cells
@@ -51,6 +55,15 @@ public:
             if (isInside(x, y)) grid[y][x] = EMPTY_CELL;
             robotPositions.erase(it);
         }
+    }
+
+    void registerRobotReference(const std::string& name, std::shared_ptr<GenericRobot> robot) {
+        robotReferences[name] = robot;
+    }
+
+    std::shared_ptr<GenericRobot> getRobotReference(const std::string& name) {
+        auto it = robotReferences.find(name);
+        return (it != robotReferences.end()) ? it->second.lock() : nullptr;
     }
 
     // Moves a robot to new coordinates if the position is valid and unoccupied

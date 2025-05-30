@@ -1,5 +1,5 @@
 /**********|**********|**********|
-Program: Robot.h
+Program: Robot.h 
 Course: Data Structures and Algorithms
 Trimester: 2410
 Name: Jason Hean Qi Shen
@@ -29,6 +29,9 @@ Phone: 016-5556355
 class JumpBot;
 class SemiAutoBot;
 class TrackBot;
+class KamikazeBot;
+class SniperBot;
+class MedicBot;
 
 // Abstract base class for all robots
 class Robot {
@@ -46,6 +49,9 @@ public:
     std::pair<int, int> getPosition() const { return {x, y}; }
     void setPosition(int newX, int newY) { x = newX; y = newY; }
     Battlefield* getBattlefield() const { return battlefield; }
+    virtual int getLives() const { return 0; }  // Base implementation
+    virtual void heal() {}  // Base implementation
+    virtual bool needsHealing() const { return false; }  // Base implementation
 };
 
 // Interface for robots that can move
@@ -170,7 +176,7 @@ public:
     }
 
     // Accessors for robot state
-    int getLives() const { return lives; }
+    int getLives() const override { return lives; }
     void decrementLives() { if (lives > 0) lives--; }
     bool hasUpgrade() const { return upgraded; }
 
@@ -205,6 +211,15 @@ public:
         int move_dy = rand() % 3 - 1;
         move(move_dx, move_dy);
     }
+
+    // Healing-related methods
+    void heal() override { 
+        if (lives < 3) {
+            lives++;
+            std::cout << getName() << " was healed! Now has " << lives << " lives.\n";
+        }
+    }
+    bool needsHealing() const override { return lives < 3; }
 };
 
 // Manages all robots on the battlefield
@@ -223,6 +238,7 @@ public:
         bool placed = battlefield.placeRobot(robot->getName(), robot->getPosition().first, robot->getPosition().second);
         if (placed) {
             robots.push_back(robot);
+            battlefield.registerRobotReference(robot->getName(), robot);  // Register the reference
             robot->setOnDestroyedCallback([this](GenericRobot* r) { robotDestroyed(r); });
         }
         return placed;

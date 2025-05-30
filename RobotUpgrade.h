@@ -135,7 +135,208 @@ public:
     }
 };
 
-// Implementation of GenericRobot's upgrade function
+// KamikazeBot - Moves toward enemies and self-destructs when adjacent
+class KamikazeBot : public GenericRobot {
+private:
+    bool hasDetonated = false;
+
+public:
+    KamikazeBot(const std::string& name, int x, int y, Battlefield* bf)
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf) {
+        upgraded = true;
+        currentUpgradeType = 3;  // New upgrade type
+        upgradeCount = 1;
+    }
+
+    void takeTurn() override {
+        think();
+        
+        // Check for adjacent enemies
+        bool enemyAdjacent = false;
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                if (dx == 0 && dy == 0) continue;
+                int checkX = x + dx;
+                int checkY = y + dy;
+                
+                if (battlefield->isInside(checkX, checkY) && 
+                    battlefield->isOccupied(checkX, checkY)) {
+                    enemyAdjacent = true;
+                    break;
+                }
+            }
+            if (enemyAdjacent) break;
+        }
+        
+        if (enemyAdjacent && !hasDetonated) {
+            // Self-destruct
+            std::cout << name << " is self-destructing!\n";
+            hasDetonated = true;
+            
+            // Damage all adjacent robots
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    if (dx == 0 && dy == 0) continue;
+                    int checkX = x + dx;
+                    int checkY = y + dy;
+                    
+                    if (battlefield->isInside(checkX, checkY)) {
+                        const auto& positions = battlefield->getRobotPositions();
+                        for (const auto& entry : positions) {
+                            const auto& pos = entry.second;
+                            if (pos.first == checkX && pos.second == checkY) {
+                                std::cout << "Explosion hit " << entry.first << " at (" 
+                                          << checkX << ", " << checkY << ")\n";
+                                battlefield->removeRobot(entry.first);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Destroy self
+            battlefield->removeRobot(name);
+            if (onDestroyedCallback) {
+                onDestroyedCallback(this);
+            }
+        } else if (!hasDetonated) {
+            // Move randomly toward enemies
+            int move_dx = rand() % 3 - 1;
+            int move_dy = rand() % 3 - 1;
+            move(move_dx, move_dy);
+        }
+    }
+};
+
+// SniperBot - Has limited but highly accurate long-range shots
+class SniperBot : public GenericRobot {
+private:
+    int remainingShells = 5; // Fewer but more powerful shots
+
+public:
+    SniperBot(const std::string& name, int x, int y, Battlefield* bf)
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf) {
+        upgraded = true;
+        currentUpgradeType = 4;  // New upgrade type
+        upgradeCount = 1;
+        setShells(remainingShells); // Use the existing shells mechanism
+    }
+
+    void takeTurn() override {
+        think();
+        
+        if (getShells() <= 0) return;
+        
+        // Look for enemies in long range (up to 5 squares away)
+        for (int distance = 5; distance >= 1; distance--) {
+            for (int dy = -distance; dy <= distance; ++dy) {
+                for (int dx = -distance; dx <= distance; ++dx) {
+                    if (dx == 0 && dy == 0) continue;
+                    if (abs(dx) + abs(dy) != distance) continue; // Only check at current distance
+                    
+                    int checkX = x + dx;
+                    int checkY = y + dy;
+                    
+                    if (battlefield->isInside(checkX, checkY) && 
+                        battlefield->isOccupied(checkX, checkY)) {
+                        // Found an enemy, take the shot
+                        if (sniperFire(dx, dy)) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If no target found at range, move randomly
+        int move_dx = rand() % 3 - 1;
+        int move_dy = rand() % 3 - 1;
+        move(move_dx, move_dy);
+    }
+
+    bool sniperFire(int dx, int dy) {
+        if (getShells() <= 0 || (dx == 0 && dy == 0)) return false;
+        
+        int targetX = x + dx;
+        int targetY = y + dy;
+        
+        if (!battlefield->isInside(targetX, targetY)) return false;
+        
+        setShells(getShells() - 1);
+        std::cout << getName() << " took a sniper shot at (" 
+                  << targetX << "," << targetY << "). Shells left: " 
+                  << getShells() << "\n";
+        
+        // Sniper shots have higher accuracy (90%)
+        if ((rand() % 100) < 90) {
+            const auto& positions = battlefield->getRobotPositions();
+            for (const auto& entry : positions) {
+                const auto& pos = entry.second;
+                if (pos.first == targetX && pos.second == targetY) {
+                    std::cout << "Direct hit! " << entry.first << " at (" 
+                              << targetX << ", " << targetY << ") was destroyed!\n";
+                    battlefield->removeRobot(entry.first);
+                    return true;
+                }
+            }
+        } else {
+            std::cout << "The sniper shot missed!\n";
+        }
+        
+        return true;
+    }
+};
+
+class MedicBot : public GenericRobot {
+private:
+    int healCharges = 3;
+
+public:
+    MedicBot(const std::string& name, int x, int y, Battlefield* bf)
+        : Robot(name, x, y, bf), GenericRobot(name, x, y, bf) {
+        upgraded = true;
+        currentUpgradeType = 5;
+        upgradeCount = 1;
+    }
+
+    void takeTurn() override {
+        think();
+        
+        // First try to heal adjacent allies
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                if (dx == 0 && dy == 0) continue;
+                int checkX = x + dx;
+                int checkY = y + dy;
+                
+                if (battlefield->isInside(checkX, checkY) && healCharges > 0) {
+                    const auto& positions = battlefield->getRobotPositions();
+                    for (const auto& entry : positions) {
+                        const auto& pos = entry.second;
+                        if (pos.first == checkX && pos.second == checkY && entry.first != name) {
+                            auto robotToHeal = battlefield->getRobotReference(entry.first);
+                            if (robotToHeal && robotToHeal->needsHealing()) {
+                                robotToHeal->heal();
+                                healCharges--;
+                                std::cout << name << " healed " << entry.first 
+                                          << " at (" << checkX << ", " << checkY 
+                                          << "). Heals left: " << healCharges << "\n";
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If no healing done, move randomly
+        int move_dx = rand() % 3 - 1;
+        int move_dy = rand() % 3 - 1;
+        move(move_dx, move_dy);
+    }
+};
+
 inline std::shared_ptr<GenericRobot> GenericRobot::applyRandomUpgrade() {
     // Check upgrade limits
     if (upgraded && upgradeCount >= 2) {
@@ -143,8 +344,8 @@ inline std::shared_ptr<GenericRobot> GenericRobot::applyRandomUpgrade() {
         return nullptr;
     }
 
-    // Determine available upgrade types
-    std::vector<int> availableUpgrades = {0, 1, 2};
+    // Determine available upgrade types (now 0-5)
+    std::vector<int> availableUpgrades = {0, 1, 2, 3, 4, 5};
     
     // Remove current upgrade type if already upgraded
     if (upgraded) {
@@ -179,6 +380,18 @@ inline std::shared_ptr<GenericRobot> GenericRobot::applyRandomUpgrade() {
         case 2:  // TrackBot upgrade
             std::cout << "Becoming a TrackBot!\n";
             upgradedRobot = std::make_shared<TrackBot>(name, x, y, battlefield);
+            break;
+        case 3:  // KamikazeBot upgrade
+            std::cout << "Becoming a KamikazeBot!\n";
+            upgradedRobot = std::make_shared<KamikazeBot>(name, x, y, battlefield);
+            break;
+        case 4:  // SniperBot upgrade
+            std::cout << "Becoming a SniperBot!\n";
+            upgradedRobot = std::make_shared<SniperBot>(name, x, y, battlefield);
+            break;
+        case 5:  // MedicBot upgrade
+            std::cout << "Becoming a MedicBot!\n";
+            upgradedRobot = std::make_shared<MedicBot>(name, x, y, battlefield);
             break;
     }
 
